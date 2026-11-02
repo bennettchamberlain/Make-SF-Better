@@ -35,7 +35,7 @@ PUT _inference/text_embedding/mistral-embeddings
 Point a `semantic_text` field at your Mistral endpoint and Elasticsearch embeds documents automatically at index time — no manual vector handling:
 
 ```
-PUT nyc_notes
+PUT sf_notes
 {
   "mappings": {
     "properties": {
@@ -51,18 +51,18 @@ PUT nyc_notes
 Index a few documents normally — Elasticsearch calls Mistral to embed them:
 
 ```
-POST nyc_notes/_doc
+POST sf_notes/_doc
 { "text": "Mouse droppings found in the kitchen near the food prep area." }
 ```
 ```
-POST nyc_notes/_doc
+POST sf_notes/_doc
 { "text": "Cold food held above 41F; no thermometer available on site." }
 ```
 
 Then search with natural language — no keywords, no vectors in your query:
 
 ```
-GET nyc_notes/_search
+GET sf_notes/_search
 {
   "query": {
     "semantic": {
@@ -75,7 +75,7 @@ GET nyc_notes/_search
 
 The "mouse droppings" document comes back top, even though it never says *rodent*. That's Mistral embeddings doing the work.
 
-> **Applying it to real data:** the restaurant `violation_description` field is perfect for this. Add a `semantic_text` field to the index (or reindex into a new one with `inference_id: "mistral-embeddings"`) and you can search inspections by meaning — "unsafe food temperatures", "pest problems", "dirty equipment" — instead of exact violation codes. The same trick works on squirrel stories, 311 messages, or OCR'd tax-photo captions.
+> **Applying it to real data:** the health inspection `violations` field is perfect for this. Add a `semantic_text` field to the index (or reindex into a new one with `inference_id: "mistral-embeddings"`) and you can search inspections by meaning — "unsafe food temperatures", "pest problems", "dirty equipment" — instead of exact violation codes. The same trick works on 311 notes, Our415 event descriptions, or OCR'd landmark reports.
 
 ### Raw vectors (bring-your-own kNN)
 
@@ -84,7 +84,7 @@ Want the vectors yourself for a custom `dense_vector` / kNN setup? Call the infe
 ```
 POST _inference/text_embedding/mistral-embeddings
 {
-  "input": ["best pizza in Brooklyn", "cleanest ramen in Manhattan"]
+  "input": ["best burrito in the Mission", "dim sum in the Richmond"]
 }
 ```
 
@@ -117,7 +117,7 @@ Swap `model` for whatever fits your project:
 POST _inference/chat_completion/mistral-chat
 {
   "messages": [
-    { "role": "user", "content": "In one sentence, what makes a NYC restaurant get a grade of C?" }
+    { "role": "user", "content": "In one sentence, what gets a San Francisco restaurant a Conditional Pass on a health inspection?" }
   ]
 }
 ```
@@ -145,7 +145,7 @@ curl "$ELASTICSEARCH_URL/_inference/chat_completion/mistral-chat/_stream" \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [
-      { "role": "system", "content": "You are a NYC restaurant inspector." },
+      { "role": "system", "content": "You are a San Francisco restaurant health inspector." },
       { "role": "user",   "content": "Summarize the health risks of cold-holding violations." }
     ]
   }'
@@ -161,7 +161,7 @@ es = Elasticsearch(ELASTIC_ENDPOINT, api_key=ELASTIC_API_KEY)
 resp = es.inference.chat_completion_unified(
     inference_id="mistral-chat",
     messages=[
-        {"role": "system", "content": "You are a NYC restaurant inspector."},
+        {"role": "system", "content": "You are a San Francisco restaurant health inspector."},
         {"role": "user",   "content": "Summarize the health risks of cold-holding violations."},
     ],
 )
@@ -176,7 +176,7 @@ Need raw embeddings in Python?
 resp = es.inference.inference(
     inference_id="mistral-embeddings",
     task_type="text_embedding",
-    input=["Lower East Side", "Astoria", "Flushing"],
+    input=["Mission", "Outer Sunset", "Chinatown"],
 )
 print(resp["text_embedding"][0]["embedding"][:5])
 ```

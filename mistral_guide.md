@@ -16,7 +16,7 @@ This guide covers what Mistral offers and how to start building with it tonight.
 
 ## More about those models
 
-* Just yesterday, we released [Mistral Large 4](https://mistral.ai/news/mistral-large-4/), our new flagship model. You can use that to power agents, write code, and more.
+* We recently released [Mistral Large 4](https://mistral.ai/news/mistral-large-4/), our new flagship model. You can use that to power agents, write code, and more.
 * For more popular models, there's a pretty guide at [mistral.ai/research](https://mistral.ai/research/)
 * [OCR 4.1](https://docs.mistral.ai/models/ocr-4-1), a top model for recognizing text in images
 * [Audio models](https://docs.mistral.ai/studio/audio/overview) for text-to-speech and speech-to-text
@@ -83,7 +83,7 @@ client = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
 
 response = client.chat.complete(
     model="mistral-large-4",
-    messages=[{"role": "user", "content": "In one sentence, what makes a NYC restaurant get a grade of C?"}],
+    messages=[{"role": "user", "content": "In one sentence, what gets a San Francisco restaurant a Conditional Pass on a health inspection?"}],
 )
 print(response.choices[0].message.content)
 ```
@@ -107,27 +107,27 @@ All the snippets below reuse this `client`.
 
 
 
-## Core APIs, on NYC data
+## Core APIs, on SF data
 
 Short Python examples. Each one links to the full docs.
 
 ### Structured outputs: messy text → clean JSON
 
-Turn free-text 311 feedback into fields you can index and aggregate in Elasticsearch. [Docs](https://docs.mistral.ai/studio/conversations/structured-output/custom)
+Turn a resident's description of a problem into fields you can index, aggregate, and match against SF 311 cases in Elasticsearch. [Docs](https://docs.mistral.ai/studio/conversations/structured-output/custom)
 
 ```python
 from pydantic import BaseModel
 
 class Complaint(BaseModel):
-    topic: str
-    borough: str | None
+    service_name: str  # e.g. "Streetlights", "Graffiti", "Tree Maintenance"
+    neighborhood: str | None
     urgency: str  # "low", "medium", or "high"
 
 response = client.chat.parse(
     model="mistral-large-4",
     messages=[
         {"role": "system", "content": "Extract the complaint details."},
-        {"role": "user", "content": "There's been a broken streetlight on my block in Astoria for three weeks and it's not safe at night."},
+        {"role": "user", "content": "There's been a broken streetlight on my block in the Outer Sunset for three weeks and it's not safe at night."},
     ],
     response_format=Complaint,
 )
@@ -145,20 +145,20 @@ tools = [{
     "type": "function",
     "function": {
         "name": "search_inspections",
-        "description": "Search NYC restaurant inspections by restaurant name or cuisine.",
+        "description": "Search San Francisco restaurant health inspections by restaurant name or violation text.",
         "parameters": {
             "type": "object",
-            "properties": {"query": {"type": "string"}, "borough": {"type": "string"}},
+            "properties": {"query": {"type": "string"}, "neighborhood": {"type": "string"}},
             "required": ["query"],
         },
     },
 }]
 
-messages = [{"role": "user", "content": "Any recent rodent violations at pizza places in Brooklyn?"}]
+messages = [{"role": "user", "content": "Any recent rodent violations at restaurants in the Mission?"}]
 response = client.chat.complete(model="mistral-large-4", messages=messages, tools=tools)
 
 tool_call = response.choices[0].message.tool_calls[0]
-args = json.loads(tool_call.function.arguments)  # e.g. {"query": "pizza rodent", "borough": "Brooklyn"}
+args = json.loads(tool_call.function.arguments)  # e.g. {"query": "rodent", "neighborhood": "Mission"}
 
 # Run your search with args, then send the result back as a "tool" message for the final answer.
 results = {"hits": []}  # replace with a real search
@@ -176,14 +176,14 @@ Embed text yourself, then index the vectors into an Elasticsearch `dense_vector`
 ```python
 response = client.embeddings.create(
     model="mistral-embed",
-    inputs=["Squirrel chased a jogger near the reservoir.", "Squirrel eating a bagel on a bench."],
+    inputs=["Storytime in Cantonese for toddlers.", "Drop-in table tennis at the rec center."],
 )
 vector = response.data[0].embedding  # 1024 floats
 ```
 
 ### Vision: understand a photo
 
-Ask about a City Nature Challenge observation photo. [Docs](https://docs.mistral.ai/studio/conversations/vision)
+Ask about a City Nature Challenge observation photo (or a 311 case photo). [Docs](https://docs.mistral.ai/studio/conversations/vision)
 
 ```python
 photo_url = "https://..."  # an observation's photo_url field from the City Nature Challenge notebook
@@ -203,17 +203,13 @@ print(response.choices[0].message.content)
 
 ### OCR: read text from images and documents
 
-Read the block/lot signboard in a 1940s tax photo. [Docs](https://docs.mistral.ai/studio/document-processing/basic_ocr)
+Read a typewritten SF landmark designation report. Pass a PDF URL directly, and pick which pages to read. [Docs](https://docs.mistral.ai/studio/document-processing/basic_ocr)
 
 ```python
-import base64
-
-with open("tax_photo.jpg", "rb") as f:
-    b64 = base64.b64encode(f.read()).decode()
-
 ocr = client.ocr.process(
     model="mistral-ocr-latest",
-    document={"type": "image_url", "image_url": f"data:image/jpeg;base64,{b64}"},
+    document={"type": "document_url", "document_url": "https://sfplanninggis.org/docs/landmarks_and_districts/LM2.pdf"},
+    pages=[0, 1, 2],
 )
 print(ocr.pages[0].markdown)
 ```
@@ -228,13 +224,13 @@ Some audio and document tools can be tried in Mistral Studio without code:
 | [Text-to-speech](https://docs.mistral.ai/studio/audio/text_to_speech/speech) | ✅ | ✅ |
 | [Speech-to-text](https://docs.mistral.ai/studio/audio/speech_to_text/offline_transcription) | | ✅ |
 
-Transcribe a street recording from the SONYC dataset. [Docs](https://docs.mistral.ai/studio/audio/speech_to_text/offline_transcription)
+Transcribe a spoken question, like "when's the next train to Berkeley?" [Docs](https://docs.mistral.ai/studio/audio/speech_to_text/offline_transcription)
 
 ```python
-with open("sonyc_clip.wav", "rb") as f:
+with open("question.wav", "rb") as f:
     transcription = client.audio.transcriptions.complete(
         model="voxtral-mini-latest",
-        file={"content": f, "file_name": "sonyc_clip.wav"},
+        file={"content": f, "file_name": "question.wav"},
     )
 print(transcription.text)
 ```
@@ -247,7 +243,7 @@ from pathlib import Path
 
 speech = client.audio.speech.complete(
     model="voxtral-mini-tts-latest",
-    input="The L train is running with delays at Bedford Avenue.",
+    input="The next train to Berkeley leaves Montgomery Street in four minutes.",
     voice_id="your-voice-id",
     response_format="mp3",
 )
@@ -256,12 +252,12 @@ Path("answer.mp3").write_bytes(base64.b64decode(speech.audio_data))
 
 ### Moderation: flag unsafe text
 
-Screen 311 feedback before you index it. [Docs](https://docs.mistral.ai/studio/safety-moderation)
+Screen user input or 311 notes before you index it. [Docs](https://docs.mistral.ai/studio/safety-moderation)
 
 ```python
 response = client.classifiers.moderate(
     model="mistral-moderation-2603",
-    inputs=["The noise from the construction site starts at 5am every day."],
+    inputs=["The noise from the construction site on Mission Street starts at 5am every day."],
 )
 print(response.results[0].categories)
 ```
@@ -284,15 +280,15 @@ The [Agents API](https://docs.mistral.ai/studio/agents/introduction) gives you a
 ```python
 agent = client.beta.agents.create(
     model="mistral-large-4",
-    name="NYC Guide",
-    description="Answers questions about New York City.",
-    instructions="You help people explore NYC. Use web search for anything current.",
+    name="SF Guide",
+    description="Answers questions about San Francisco.",
+    instructions="You help people explore San Francisco without a car. Use web search for anything current.",
     tools=[{"type": "web_search"}],
 )
 
 response = client.beta.conversations.start(
     agent_id=agent.id,
-    inputs="What's happening in Central Park this weekend?",
+    inputs="What's happening in Golden Gate Park this weekend?",
 )
 print(response.outputs[-1].content)
 ```
