@@ -35,8 +35,14 @@ We'll introduce the challenge, walk through the tools, and share the starter res
 **5:30 PM – Build time:**
 Choose an idea and start building. Mentors from Mistral AI and Elastic will be available to help.
 
-**7:30 PM – Show and tell:**
-Share what you built with the room, no matter how finished it is. After the demos, we'll award prizes to the top projects.
+**7:30 PM – Initial Judging:**
+2-min pitches to available judges. Each judge will pick their top 2 finalists.
+
+**8:00 PM – Finalist Presentations:**
+3-min presentations (will be timed) from the chosen finalists in front of the entire crowd.
+
+**8:30 PM – Winners & Prizes:**
+Top 3 overall projects are awarded prizes.
 
 ---
 
@@ -52,8 +58,8 @@ Projects will be evaluated on:
 
 At the end you'll present what you built, no matter how finished it is. Show it off even if it's rough; that's the spirit of the night.
 
-Some presentation guidelines:
-- **3-minute demo.** Show us **who your project helps**, **what it does**, and **how someone could use it**. No polished UI expected: a notebook, Dev Tools, a script, or Kibana is fine.
+Some initial presentation guidelines:
+- **2-minute demo.** Show us **who your project helps**, **what it does**, and **how someone could use it**. No polished UI expected: a notebook, Dev Tools, a script, or Kibana is fine.
 - Show the **Elastic** portion (your queries, mappings, or tools) and the **Mistral** portion (which Mistral tech you used and where). Those two, plus any accompanying tech, must be part of the demo.
 
 **Ground rules:** you can think about ideas beforehand, but all implementation happens during the hack night. Please don't bring confidential, sensitive, or proprietary data unless you're authorized to use it.
@@ -83,7 +89,7 @@ To get set up:
 You'll need two things:
 
 1. **Elasticsearch Serverless (9.4+)** — [free trial](https://cloud.elastic.co/serverless-registration?utm_source=github&utm_medium=event&utm_campaign=2026-11-03-elastic-mistral-sf-hacknight-amer&utm_content=link). A home for your data, and where Agent Builder lives.
-2. **Mistral API key(s)** — We'll hand these out at the event. Install the SDK with `pip install mistralai` (or `npm i @mistralai/mistralai`) and call Mistral's models, agents, OCR, and audio APIs directly. The same key works in Mistral Vibe.
+2. **Mistral Credits** — We'll hand these out at the event. Visit the billing page to enter the code. Install the SDK with `pip install mistralai` (or `npm i @mistralai/mistralai`) and call Mistral's models, agents, OCR, and audio APIs directly. The same key works in Mistral Vibe.
 
 **How Elastic is used:** Elasticsearch provides the search and retrieval layer: store an SF dataset and query it with keyword, vector, and hybrid search, aggregations, and geo queries, from a notebook, Dev Tools, your own app, or (optionally) Agent Builder.
 
