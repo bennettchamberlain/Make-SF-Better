@@ -95,6 +95,7 @@ button.secondary { background: transparent; color: var(--ink); border: 1px solid
 .case.selected { border-color: var(--green); box-shadow: inset 3px 0 0 var(--green); }
 .case strong { display: block; }
 .case span, .hint, .status, .meta { color: var(--muted); }
+.hint a { color: var(--green); }
 .hint { margin-top: 0; }
 
 .detail { display: grid; gap: 0.8rem; }
