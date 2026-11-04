@@ -20,13 +20,13 @@ def mail_mode():
 def cleanup_note(volunteer, case, before_url, after_url, shop_name=""):
     where = (case.get("address") or "a nearby sidewalk").split(",")[0].title()
     shop = shop_name or "your shop"
-    subject = f"I cleaned the sidewalk near {shop}"
+    subject = f"I took care of a 311 job near {shop}"
     text = (
-        f"I cleaned up a sidewalk mess near {shop}.\n\n"
-        f"What: {case.get('detail_label') or 'Street and sidewalk cleaning'}\n"
+        f"I took care of a city request on the sidewalk near {shop}.\n\n"
+        f"What: {case.get('detail_label') or 'A neighbor-sized 311 job'}\n"
         f"Where: {where}\n"
         f"Neighborhood: {case.get('neighborhood') or 'San Francisco'}\n\n"
-        "I was able to clear it and noticed it was right around your business. "
+        "I was able to finish it and noticed it was right around your business. "
         "The before and after photos are attached. "
         "If that helped, a coffee, some supplies, or a hand on the next block "
         "would make it worth doing again.\n\n"

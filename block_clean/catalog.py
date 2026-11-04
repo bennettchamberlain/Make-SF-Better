@@ -1,15 +1,4 @@
-"""Street-cleaning jobs a neighbor can finish, and which businesses count as shops."""
-
-# service_details values on Street and Sidewalk Cleaning that do not need
-# a city crew, a truck, or a hazmat kit. Human waste, needles, spills,
-# furniture, and appliances stay with the city.
-VOLUNTEER_DETAILS = {
-    "other_loose_garbage_debris_yard_waste": "Loose garbage, debris, or yard waste",
-    "other_bagged_boxed_contained_garbage": "Bagged or boxed garbage",
-    "glass": "Broken glass",
-    "city_garbage_can_overflowing": "Overflowing city trash can",
-    "event_parade_mess": "Mess left after an event or parade",
-}
+"""Which businesses count as shops. Which 311 jobs a neighbor can take is decided in fit.py."""
 
 # NAICS prefixes for storefronts a cleanup note is actually for.
 # 44/45 retail, 72 food and lodging. Offices and holding companies are left out.

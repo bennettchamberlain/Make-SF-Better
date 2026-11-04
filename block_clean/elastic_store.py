@@ -29,8 +29,11 @@ def _point_mapping():
 CASE_MAPPINGS = {"properties": {
     "service_request_id": {"type": "keyword"},
     "requested_at": {"type": "date"},
+    "service_name": {"type": "keyword"},
+    "service_subtype": {"type": "keyword"},
     "service_details": {"type": "keyword"},
     "detail_label": {"type": "keyword"},
+    "fit_why": {"type": "text"},
     "address": {"type": "text"},
     "neighborhood": {"type": "keyword"},
     "photo_url": {"type": "keyword"},

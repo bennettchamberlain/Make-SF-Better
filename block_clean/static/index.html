@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Block Clean</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="/static/styles.css" />
@@ -12,7 +12,7 @@
     <div>
       <p class="eyebrow">San Francisco 311</p>
       <h1>Block Clean</h1>
-      <p class="lede">Street and sidewalk jobs a neighbor can finish. Log a before and after photo, and the shops within a few blocks get the picture.</p>
+      <p class="lede">Open 311 jobs from the last 180 days that a neighbor can finish on foot. Mistral reads each request type and keeps the ones a person can do. Log a before and after photo, and the shops within a few blocks get the picture.</p>
     </div>
     <p id="citywide" class="citywide"></p>
   </header>
@@ -39,14 +39,10 @@
     </form>
 
     <section id="work" class="work" hidden>
+      <p id="map-hint" class="hint">Tap a dot and the job opens below.</p>
       <div id="map" class="map"></div>
-      <div>
-        <h2 id="list-title">Open jobs</h2>
-        <div id="case-list" class="case-list"></div>
-      </div>
+      <section id="detail" class="detail" hidden></section>
     </section>
-
-    <section id="detail" class="panel detail" hidden></section>
 
     <section class="split">
       <section class="panel">
@@ -77,6 +73,6 @@
   </main>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=4"></script>
 </body>
 </html>

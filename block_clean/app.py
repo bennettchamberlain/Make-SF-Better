@@ -66,7 +66,9 @@ def _public_case(case):
     return {
         "service_request_id": case["service_request_id"],
         "requested_at": case.get("requested_at"),
+        "service_name": case.get("service_name"),
         "detail_label": case.get("detail_label"),
+        "fit_why": case.get("fit_why"),
         "service_details": case.get("service_details"),
         "address": case.get("address"),
         "neighborhood": case.get("neighborhood"),

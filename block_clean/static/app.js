@@ -108,7 +108,7 @@ function clearMarkers(list) {
 
 function ensureMap() {
   if (state.map || !window.L) {
-    if (!window.L) $("map").textContent = "The map didn’t load. The list still works.";
+    if (!window.L) $("map").textContent = "The map didn’t load.";
     return;
   }
   state.map = L.map("map").setView([37.76, -122.44], 12);
@@ -118,7 +118,7 @@ function ensureMap() {
   }).addTo(state.map);
 }
 
-function showCasesOnMap() {
+function showCasesOnMap(fit = true) {
   if (!state.map) return;
   clearMarkers(state.markers);
   clearMarkers(state.businessMarkers);
@@ -139,45 +139,33 @@ function showCasesOnMap() {
     state.markers.push(marker);
     bounds.push([point.lat, point.lon]);
   }
-  if (bounds.length) state.map.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
+  if (fit && bounds.length) state.map.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
   state.map.invalidateSize();
   setTimeout(() => state.map && state.map.invalidateSize(), 50);
 }
 
-function renderList() {
-  const list = $("case-list");
-  $("list-title").textContent = state.cases.length
-    ? `${state.neighborhood} · ${state.cases.length} open`
-    : state.neighborhood;
-  list.replaceChildren();
+function renderMapHint() {
+  const hint = $("map-hint");
   if (!state.cases.length) {
-    list.append(el("p", { class: "hint" }, ["Nothing open in this neighborhood right now."]));
+    hint.textContent = `Nothing open in ${state.neighborhood} right now.`;
     return;
   }
-  for (const item of state.cases) {
-    const button = el("button", {
-      type: "button",
-      class: item.service_request_id === state.selectedId ? "case selected" : "case",
-      onclick: () => selectCase(item.service_request_id),
-    }, [
-      el("strong", {}, [street(item.address)]),
-      el("span", {}, [item.detail_label]),
-    ]);
-    list.append(button);
-  }
+  const count = `${state.cases.length} ${state.cases.length === 1 ? "job" : "jobs"}`;
+  hint.textContent = `${count} on the map. Tap a dot and the job opens below.`;
 }
 
 async function selectCase(caseId) {
   state.selectedId = caseId;
-  renderList();
-  showCasesOnMap();
+  showCasesOnMap(false);
   const detail = $("detail");
   detail.hidden = false;
   detail.replaceChildren(el("p", {}, ["Loading that block…"]));
+  detail.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
     const data = await api(`/api/cases/${encodeURIComponent(caseId)}`);
     renderDetail(data);
     showNearbyBusinesses(data.businesses || []);
+    detail.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) {
     detail.replaceChildren(el("p", { class: "warn" }, [error.message]));
   }
@@ -201,15 +189,34 @@ function showNearbyBusinesses(businesses) {
   }
 }
 
+function emptyCityPhoto() {
+  return el("div", {}, [
+    el("p", { class: "hint" }, ["No photo came with this 311 report. Your before and after shots are the record."]),
+    el("div", { class: "no-photo" }, ["No city photo"]),
+  ]);
+}
+
+function cityPhotoBlock(item) {
+  const wrap = el("div", { class: "city-photo" });
+  if (!item.photo_url) {
+    wrap.append(emptyCityPhoto());
+    return wrap;
+  }
+  const img = el("img", { alt: "Photo filed with the 311 case" });
+  img.addEventListener("error", () => wrap.replaceChildren(emptyCityPhoto()));
+  img.src = item.photo_url;
+  wrap.append(
+    el("p", { class: "hint" }, ["Photo from the original 311 report. You still add your own before and after."]),
+    img,
+  );
+  return wrap;
+}
+
 function renderDetail(data) {
   const item = data.case;
   const detail = $("detail");
-  const photos = el("div", { class: "photos" });
-  if (item.photo_url) {
-    photos.append(el("img", { src: item.photo_url, alt: "Photo filed with the 311 case" }));
-  }
   const businesses = el("ul", { class: "shops-near" });
-    if (!(data.businesses || []).length) {
+  if (!(data.businesses || []).length) {
     businesses.append(el("li", {}, ["No retail or food businesses within 400 meters."]));
   }
   for (const business of data.businesses || []) {
@@ -220,19 +227,18 @@ function renderDetail(data) {
   const form = el("form", { class: "proof", onsubmit: (event) => submitProof(event, item.service_request_id) }, [
     el("label", {}, ["Before", el("input", { name: "before", type: "file", accept: "image/*", required: "required" })]),
     el("label", {}, ["After", el("input", { name: "after", type: "file", accept: "image/*", required: "required" })]),
-    el("button", { type: "submit" }, ["Mark this cleaned"]),
+    el("button", { type: "submit" }, ["Mark this done"]),
   ]);
   detail.replaceChildren(
     el("div", {}, [
       el("h2", {}, [street(item.address)]),
       el("p", { class: "meta" }, [
-        `${item.detail_label} · ${item.neighborhood}. Wear gloves. Skip needles, human waste, or anything that looks hazardous — those stay with the city.`,
+        `${item.detail_label} · ${item.neighborhood}. ${item.fit_why || "Wear gloves, and leave anything hazardous with the city."}`,
       ]),
     ]),
     el("div", { class: "detail-grid" }, [
       el("div", {}, [
-        photos.childNodes.length ? el("p", { class: "hint" }, ["Photo from the original 311 report. You still add your own before and after."]) : el("p", { class: "hint" }, ["No city photo on this case."]),
-        photos,
+        cityPhotoBlock(item),
         el("h3", {}, ["Your proof"]),
         form,
         el("p", { class: "hint" }, ["Both photos are required. We don’t review them. Logging this here does not close the official 311 case."]),
@@ -263,7 +269,7 @@ async function submitProof(event, caseId) {
     const result = await api(`/api/cases/${encodeURIComponent(caseId)}/complete`, { method: "POST", body });
     state.cases = state.cases.filter((item) => item.service_request_id !== caseId);
     state.selectedId = null;
-    renderList();
+    renderMapHint();
     showCasesOnMap();
     renderSuccess(result);
     await loadBoard();
@@ -345,8 +351,9 @@ async function showJobs(event) {
     $("work").hidden = false;
     $("detail").hidden = true;
     ensureMap();
-    renderList();
+    renderMapHint();
     showCasesOnMap();
+    $("work").scrollIntoView({ behavior: "smooth", block: "start" });
     const mailNote = mailReady ? " Gmail will send the note with your photos." : " Add a Gmail app password when you want the note to come from you.";
     setStatus(`${state.cases.length} open jobs in ${state.neighborhood}.${mailNote}`);
     await loadBoard();

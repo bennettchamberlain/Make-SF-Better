@@ -1,10 +1,10 @@
 # Block Clean
 
-A small platform for San Francisco 311 **street and sidewalk cleaning** jobs a neighbor can actually finish: loose trash, bagged garbage, broken glass, an overflowing city can, or the mess after an event.
+A small platform for San Francisco 311 jobs a neighbor can actually finish. Open cases from the last 180 days are grouped by request type, and Mistral (`mistral-small-latest`) decides which types a person can do on foot. Needles, human waste, encampments, and a few categories that need a truck or a crew are left with the city even if the model would include them.
 
 People enter an email, pick a neighborhood, and get the open cases there. Logging a before photo and an after photo puts them on a leaderboard. Shops that have joined, within 400 meters, get an email with the after photo. Reply-to is the neighbor, so the shop can offer a hand.
 
-Official 311 cases are not closed by this app. Human waste, needles, spills, furniture, and appliances are left out on purpose.
+Official 311 cases are not closed by this app. The model’s decisions are cached in `data/job_fit.json`.
 
 ## Run
 
@@ -31,7 +31,7 @@ A volunteer can paste a Gmail app password (Google Account, Security, App passwo
 
 | Index or file | Contents |
 |---|---|
-| Cases | Open street-cleaning requests from the last 180 days, volunteer-safe details only, with a `geo_point` |
+| Cases | Open 311 requests from the last 180 days that Mistral marked as neighbor-sized, with a `geo_point` |
 | Businesses | Open retail and food locations in San Francisco, with a `geo_point` |
 | Volunteers | Email, display name, neighborhood |
 | Shops | Shops that joined, geocoded, so they can be emailed |
