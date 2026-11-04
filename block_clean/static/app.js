@@ -298,9 +298,9 @@ function renderSuccess(result) {
     el("h3", {}, ["Note sent to shops"]),
     list,
     el("pre", { class: "note" }, [result.note ? result.note.text : ""]),
-    result.mail === "outbox"
-      ? el("p", { class: "hint" }, ["No email provider is configured, so these notes were saved to the local outbox instead of sent."])
-      : el("p", { class: "hint" }, ["Replies go to your email."]),
+    result.mail === "gmail" || (result.notified || []).some((shop) => shop.delivery === "gmail")
+      ? el("p", { class: "hint" }, ["Sent from your Gmail, with both photos attached. Replies come back to you."])
+      : el("p", { class: "hint" }, ["No Gmail app password is saved, so these notes were kept locally instead of sent."]),
   );
   detail.hidden = false;
 }
@@ -329,6 +329,17 @@ async function showJobs(event) {
       }),
     });
     state.displayName = saved.display_name;
+    const appPassword = $("app-password").value;
+    let mailReady = saved.mail_ready;
+    if (appPassword.trim()) {
+      const mail = await api("/api/mail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: state.email, app_password: appPassword }),
+      });
+      mailReady = mail.mail_ready;
+      $("app-password").value = "";
+    }
     state.cases = await api(`/api/cases?neighborhood=${encodeURIComponent(state.neighborhood)}`);
     state.selectedId = null;
     $("work").hidden = false;
@@ -336,7 +347,8 @@ async function showJobs(event) {
     ensureMap();
     renderList();
     showCasesOnMap();
-    setStatus(`${state.cases.length} open jobs in ${state.neighborhood}.`);
+    const mailNote = mailReady ? " Gmail will send the note with your photos." : " Add a Gmail app password when you want the note to come from you.";
+    setStatus(`${state.cases.length} open jobs in ${state.neighborhood}.${mailNote}`);
     await loadBoard();
   } catch (error) {
     setStatus(error.message, true);

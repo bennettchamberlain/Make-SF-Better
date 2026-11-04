@@ -9,7 +9,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from catalog import BUSINESS_LIMIT, BUSINESS_RADIUS_M, NOTIFY_LIMIT, SHOP_RADIUS_M, case_business_query
-from emailer import mail_mode, notify_shops, public_url, upload_file
+from emailer import check_gmail, mail_mode, notify_shops, public_url, upload_file
+from mail_crypto import normalize_app_password, open_secret, seal
 from geo import address_key, geocode_address
 from paths import STATIC, UPLOADS, ensure_dirs
 from store import AlreadySolved, CaseNotFound, get_store
@@ -42,6 +43,11 @@ class ShopIn(BaseModel):
     email: str
     name: str
     address: str
+
+
+class GmailIn(BaseModel):
+    email: str
+    app_password: str
 
 
 def _email(value):
@@ -151,7 +157,24 @@ def save_volunteer(body: VolunteerIn):
         "email": volunteer["email"],
         "display_name": volunteer["display_name"],
         "neighborhood": volunteer["neighborhood"],
+        "mail_ready": store.mail_ready(email),
     }
+
+
+@app.post("/api/mail")
+def save_gmail(body: GmailIn):
+    email = _email(body.email)
+    password = normalize_app_password(body.app_password)
+    if len(password) != 16 or not password.isalnum():
+        raise HTTPException(400, "A Gmail app password is 16 letters. Spaces are fine.")
+    try:
+        check_gmail(email, password)
+    except Exception:
+        raise HTTPException(400, "Gmail refused that app password. Use an app password, not your normal Gmail password.")
+    secret, digest = seal(password)
+    if not store.save_gmail(email, secret, digest):
+        raise HTTPException(400, "Save your email first")
+    return {"email": email, "mail_ready": True}
 
 
 @app.get("/api/cases")
@@ -218,6 +241,13 @@ def complete_case(
         )
     # A person should not get a shop email about their own cleanup.
     shops = [shop for shop in shops if shop.get("email") != email]
+    gmail = None
+    token = store.gmail_secret(email)
+    if token:
+        try:
+            gmail = {"email": email, "display_name": name, "app_password": open_secret(token)}
+        except ValueError:
+            gmail = None
     note = notify_shops(
         shops,
         {"email": email, "display_name": name},
@@ -225,6 +255,8 @@ def complete_case(
         public_url(before_url),
         public_url(after_url),
         upload_file(after_url),
+        before_file=upload_file(before_url),
+        gmail=gmail,
     )
     store.mark_notified(case_id, [row["email"] for row in note["shops"] if row["delivery"] != "failed"])
     board = store.leaderboard(limit=20, email=email)
@@ -234,7 +266,7 @@ def complete_case(
         "rank": you.get("rank"),
         "before_url": before_url,
         "after_url": after_url,
-        "mail": mail_mode(),
+        "mail": "gmail" if gmail else mail_mode(),
         "note": {"subject": note["subject"], "text": note["text"], "reply_to": note["reply_to"]},
         "notified": note["shops"],
         "businesses": [_public_business(row) for row in businesses],

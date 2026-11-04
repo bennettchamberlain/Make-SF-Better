@@ -18,6 +18,10 @@ def _now():
     return datetime.now(timezone.utc).isoformat()
 
 
+def _public_volunteer(doc):
+    return {key: value for key, value in doc.items() if key not in {"gmail_secret", "gmail_fingerprint"}}
+
+
 def _point_mapping():
     return {"type": "geo_point"}
 
@@ -50,6 +54,8 @@ VOLUNTEER_MAPPINGS = {"properties": {
     "display_name": {"type": "keyword"},
     "neighborhood": {"type": "keyword"},
     "created_at": {"type": "date"},
+    "gmail_secret": {"type": "keyword", "ignore_above": 2048},
+    "gmail_fingerprint": {"type": "keyword"},
 }}
 
 SHOP_MAPPINGS = {"properties": {
@@ -100,6 +106,8 @@ class ElasticStore:
             exists = False
         if not exists:
             self.es.indices.create(index=index, mappings=mappings)
+        elif not recreate:
+            self.es.indices.put_mapping(index=index, properties=mappings["properties"])
 
     def _search(self, index, query, size=20, sort=None, source=None):
         if not self.es.indices.exists(index=index):
@@ -318,9 +326,34 @@ class ElasticStore:
             "display_name": display_name,
             "neighborhood": neighborhood or current.get("neighborhood") or "",
             "created_at": current.get("created_at") or _now(),
+            "gmail_secret": current.get("gmail_secret"),
+            "gmail_fingerprint": current.get("gmail_fingerprint"),
         }
         self.es.index(index=VOLUNTEERS, id=email, document=doc, refresh="wait_for")
-        return doc
+        return _public_volunteer(doc)
+
+    def save_gmail(self, email, secret, fingerprint):
+        if not self.es.exists(index=VOLUNTEERS, id=email):
+            return None
+        self.es.update(
+            index=VOLUNTEERS,
+            id=email,
+            doc={"gmail_secret": secret, "gmail_fingerprint": fingerprint},
+            refresh="wait_for",
+        )
+        return {"email": email}
+
+    def gmail_secret(self, email):
+        try:
+            return self.es.get(index=VOLUNTEERS, id=email)["_source"].get("gmail_secret")
+        except NotFoundError:
+            return None
+
+    def mail_ready(self, email):
+        try:
+            return bool(self.es.get(index=VOLUNTEERS, id=email)["_source"].get("gmail_fingerprint"))
+        except NotFoundError:
+            return False
 
     def upsert_shop(self, doc):
         current = {}

@@ -11,6 +11,10 @@ def _now():
     return datetime.now(timezone.utc).isoformat()
 
 
+def _public_volunteer(doc):
+    return {key: value for key, value in doc.items() if key not in {"gmail_secret", "gmail_fingerprint"}}
+
+
 def _empty():
     return {
         "cases": {},
@@ -164,9 +168,27 @@ class LocalStore:
                 "display_name": display_name,
                 "neighborhood": neighborhood or current.get("neighborhood") or "",
                 "created_at": current.get("created_at") or _now(),
+                "gmail_secret": current.get("gmail_secret"),
+                "gmail_fingerprint": current.get("gmail_fingerprint"),
             }
             self._save()
-            return self.db["volunteers"][email]
+            return _public_volunteer(self.db["volunteers"][email])
+
+    def save_gmail(self, email, secret, fingerprint):
+        with self._lock:
+            current = self.db["volunteers"].get(email)
+            if not current:
+                return None
+            current["gmail_secret"] = secret
+            current["gmail_fingerprint"] = fingerprint
+            self._save()
+            return _public_volunteer(current)
+
+    def gmail_secret(self, email):
+        return (self.db["volunteers"].get(email) or {}).get("gmail_secret")
+
+    def mail_ready(self, email):
+        return bool((self.db["volunteers"].get(email) or {}).get("gmail_fingerprint"))
 
     def upsert_shop(self, doc):
         with self._lock:

@@ -30,6 +30,10 @@
           <option value="">Loading neighborhoods…</option>
         </select>
       </label>
+      <label class="span">Gmail app password
+        <input id="app-password" name="app_password" type="password" autocomplete="off" placeholder="xxxx xxxx xxxx xxxx" />
+      </label>
+      <p class="hint span">Optional. In your Google account, turn on 2-step verification, then create an app password under Security. We encrypt it in Elasticsearch and only use it to send the cleanup note, with both photos, from your Gmail. The password is never shown again.</p>
       <button type="submit">Show jobs I can do</button>
       <p id="status" class="status" role="status"></p>
     </form>

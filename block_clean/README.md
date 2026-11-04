@@ -25,6 +25,8 @@ Copy `.env.example` to `.env` to use Elasticsearch, Resend, or SMTP. With those 
 
 On Elasticsearch, each business has an `about` field of type `semantic_text`, embedded with the `mistral-embeddings` endpoint (`mistral-embed`). Opening a case searches that field and keeps only businesses within 400 meters, so the list is both relevant to the cleanup and actually nearby.
 
+A volunteer can paste a Gmail app password (Google Account, Security, App passwords). The app checks it with Gmail, then stores it encrypted in Elasticsearch along with a hash fingerprint. The password is not returned by the API. After a cleanup, the note and both photos are sent from that Gmail account to joined shops within 400 meters.
+
 ## What gets stored
 
 | Index or file | Contents |
