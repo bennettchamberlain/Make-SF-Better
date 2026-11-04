@@ -8,6 +8,12 @@
 __pycache__/
 *.pyc
 .env
+key.txt
+block_clean/.venv/
+
+# Local app data (ingested cases, photos, outbox)
+block_clean/data/*
+!block_clean/data/.gitkeep
 
 # macOS
 .DS_Store
